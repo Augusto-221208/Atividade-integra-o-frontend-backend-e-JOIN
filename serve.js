@@ -5,8 +5,6 @@ import pkg from 'pg'
 const { Pool } = pkg;
 
 const fastify = Fastify()
-
-//habilitar cors
 await fastify.register(cors)
 
 //conexão com postgres
@@ -18,7 +16,6 @@ const pool = new Pool({
     port: 5432,
 })
 
-//endpoint GET/compras
 fastify.get ('/compras', async (request, reply) => {
     try {
         const res = await pool.query('SELECT pessoa,item,preco FROM compras');
@@ -51,15 +48,15 @@ fastify.get('/estoque', async (request, reply) => {
 fastify.get('/estoque', async (request, reply) => {
 
     const resultado= await client.query(`
-        SELECT
-            produto.id,
-            produto.nome_produto,
-            produto.preco_custo,
-            produto.preco_venda,
-            estoque.quantidade
-        FROM produto
-        INNER JOIN categoria 
-        ON produto.categoria_id = categoria.id
+    SELECT
+    produto.id,
+    produto.nome_produto,
+    produto.preco_custo,
+    produto.preco_venda,
+    estoque.quantidade
+    FROM produto
+    INNER JOIN categoria 
+    ON produto.categoria_id = categoria.id
 
     `)
     const produtos = resultado.rows.map(produto => {
@@ -78,4 +75,44 @@ fastify.listen({ port: 3000}, (err, address) => {
         process.exit(1)
     }
     console.log(`Server rodando em ${address}`)
+});
+
+const { pool } = require('pg');
+const pool = new Pool({
+    user: 'postgres',
+    host: 'localhost',
+    database:'barbearia',
+    password: '1234',
+    port: 5432,
+});
+module.exports = { pool };
+const express = require('express');
+const cors = express('cors');
+const pool = express('./db');
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/estoque', async (request, reply) => {
+
+    try {
+
+        const resultado = await client.query(`
+        SELECT
+        cliente.nome AS nome_cliente,
+        TO_char(cliente.data_nascimento, 'DD/MM/YYYY') AS data_nascimento,
+        agendamento.servico,
+        agendamento.preco,
+        estoque.quantidade,
+        TO_char(agendamento.data_agendamento, 'DD/MM/YYYY') AS data_agendamento,
+        TO_char(agendamento.horario_agendamento, 'HH24:MI') AS horario_agendamento
+        FROM cliente
+        INNER JOIN agendamento
+        ON cliente.id = agendamento.cliente_id`);
+        res.json(resultado.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro do servidor' });
+    }
 })
